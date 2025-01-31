@@ -55,30 +55,33 @@ class EquipamentoManager:
     def __init__(self, diretorio_manager: DiretorioManager):
         self._diretorio_manager = diretorio_manager
 
-    def validar_dados(self, nome_equipamento: str, numero_os: str, tensao: str) -> None:
-        """Valida os dados de entrada."""
-        if not all([nome_equipamento.strip(), numero_os.strip(), tensao.strip()]):
-            raise ValueError("Todos os campos são obrigatórios")
+    # def validar_dados(self, nome_equipamento: str, numero_os: str, tensao: str) -> None:
+    #     """Valida os dados de entrada."""
+    #     if not all([nome_equipamento.strip(), numero_os.strip(), tensao.strip()]):
+    #         raise ValueError("Todos os campos são obrigatórios")
         
-        if not numero_os.isdigit():
-            raise ValueError("Número da OS deve conter apenas dígitos")
+    #     if not numero_os.isdigit():
+    #         raise ValueError("Número da OS deve conter apenas dígitos")
 
-        try:
-            float(tensao.replace('V', '').strip())
-        except ValueError:
-            raise ValueError("Tensão deve ser um número válido")
+    #     try:
+    #         float(tensao.replace('V', '').strip())
+    #     except ValueError:
+    #         raise ValueError("Tensão deve ser um número válido")
 
 
        #Retorna a OS,o nome do equipamento e a tensão
     def _buscaInformacoesEquipamentoOS(self, arquivo: str) -> Optional [tuple[str,str,str]]:
 
-        df = pd.read_excel(arquivo)
+        df = pd.read_excel(arquivo,skiprows=1, header=0, )           # Ignora a primeira linha (vazia)
+             # Lê apenas a coluna B (onde estão os dados)
+               # Define a próxima linha (linha 2 do Excel) como cabeçalho)
         informacoes = []
+        a = df.columns.tolist()
         try:
             #Percorre as colunas de nome do equipamento,num da OS e tensão para criar uma lista com as informações
-            for equipamento in df['Equipamento'].dropna():
+            for equipamento in df['DESCRIÇÃO']:
 
-                    for tensao in df['Tensão']:
+                    for tensao in df['TENSÃO']:
 
                         for os in df['OS']:
 
@@ -90,13 +93,13 @@ class EquipamentoManager:
         except Exception as e:
             logging.error(f"Erro ao buscar informações do equipamento: {str(e)}")
 
-    def obter_pasta_mais_recente(self, nome_equipamento: str,tensao:str) -> Optional[Tuple[str, float]]:
+    def obter_pasta_mais_recente(self) -> Optional[Tuple[str, float]]:
         #????
         informacoes = self._buscaInformacoesEquipamentoOS(self._diretorio_manager.arquivo_excel)
 
   
         """Obtém a pasta mais recente para um dado equipamento."""
-        pastas = self._diretorio_manager.buscar_pastas_equipamento(nome_equipamento,tensao)
+        pastas = self._diretorio_manager.buscar_pastas_equipamento(informacoes[0][0],informacoes[0][2])
         if not pastas:
             return None
         return max(pastas, key=lambda x: x[1])
@@ -104,7 +107,7 @@ class EquipamentoManager:
     def criar_nova_pasta(self, nome_equipamento: str, numero_os: str, 
                         tensao: str, pasta_origem: Tuple[str, float]) -> Tuple[str, float]:
         """Cria uma nova pasta para o equipamento com base em uma pasta existente."""
-        self.validar_dados(nome_equipamento, numero_os, tensao)
+        # self.validar_dados(nome_equipamento, numero_os, tensao)
         
         if not pasta_origem:
             raise ValueError("Pasta de origem não encontrada")
@@ -175,7 +178,7 @@ class InterfaceGrafica:
             entry.pack()
             setattr(self, attr_name, entry)
 
-        self.botao_criar = Button(main_frame, text="Criar Nova Pasta", 
+        self.botao_criar = Button(main_frame, text="Criar Pastas", 
                                 command=self._processar_criacao, state='disabled')
         self.botao_criar.pack(pady=20)
 
@@ -199,7 +202,7 @@ class InterfaceGrafica:
             arquivo = filedialog.askopenfilename(title="Selecione o arquivo Excel com as OS",filetypes=[("Excel files", "*.xlsx")])
             if arquivo:
                 self._diretorio_manager.arquivo_excel = arquivo
-                self.label_arquivo_excel.config(text=f"Equipamentos Mês: {arquivo}")
+     
                 self.botao_criar.config(state='normal')
         except Exception as e:
             messagebox.showerror("Erro", str(e))
@@ -211,7 +214,7 @@ class InterfaceGrafica:
             tensao = self.entrada_tensão.get()
 
             # Validação dos dados
-            self._equipamento_manager.validar_dados(nome_equip, numero_os, tensao)
+            # self._equipamento_manager.validar_dados(nome_equip, numero_os, tensao)
 
             pasta_recente = self._equipamento_manager.obter_pasta_mais_recente()
             # pasta_recente = self._equipamento_manager.obter_pasta_mais_recente(nome_equip,tensao)
