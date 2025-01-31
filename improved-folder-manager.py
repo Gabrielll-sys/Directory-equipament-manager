@@ -71,11 +71,19 @@ class EquipamentoManager:
 
        #Retorna a OS,o nome do equipamento e a tensão
     def _buscaInformacoesEquipamentoOS(self, arquivo: str) -> Optional [tuple[str,str,str]]:
+
+        df = pd.read_excel(arquivo)
         informacoes = []
         try:
-            df = pd.read_excel(arquivo)
-            nome_equipamento = df['Equipamento'][0]
-            tensao = df['Tensão'][0]
+            #Percorre as colunas de nome do equipamento,num da OS e tensão para criar uma lista com as informações
+            for equipamento in df['Equipamento'].dropna():
+
+                    for tensao in df['Tensão']:
+
+                        for os in df['OS']:
+
+                            informacoes.append((os,equipamento,tensao))
+
 
             return informacoes
         
@@ -83,6 +91,10 @@ class EquipamentoManager:
             logging.error(f"Erro ao buscar informações do equipamento: {str(e)}")
 
     def obter_pasta_mais_recente(self, nome_equipamento: str,tensao:str) -> Optional[Tuple[str, float]]:
+        #????
+        informacoes = self._buscaInformacoesEquipamentoOS(self._diretorio_manager.arquivo_excel)
+
+  
         """Obtém a pasta mais recente para um dado equipamento."""
         pastas = self._diretorio_manager.buscar_pastas_equipamento(nome_equipamento,tensao)
         if not pastas:
@@ -201,7 +213,8 @@ class InterfaceGrafica:
             # Validação dos dados
             self._equipamento_manager.validar_dados(nome_equip, numero_os, tensao)
 
-            pasta_recente = self._equipamento_manager.obter_pasta_mais_recente(nome_equip,tensao)
+            pasta_recente = self._equipamento_manager.obter_pasta_mais_recente()
+            # pasta_recente = self._equipamento_manager.obter_pasta_mais_recente(nome_equip,tensao)
             if not pasta_recente:
                 messagebox.showwarning("Aviso", 
                                      f"Não foi encontrada pasta para: {nome_equip}")
